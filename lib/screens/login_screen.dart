@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -17,6 +18,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final Firestore _db = Firestore.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   void _signIn(BuildContext context) async {
@@ -29,24 +31,11 @@ class _LoginScreenState extends State<LoginScreen> {
           email: email,
           password: password,
         );
-        showDialog(
-          context: context,
-          builder: (ctx) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              title: Text('Done'),
-              content: Text('Signin success'),
-              actions: [
-                FlatButton(
-                  child: Text("Cancel"),
-                  onPressed: () {
-                    Navigator.of(ctx).pop();
-                  },
-                ),
-              ],
-            );
+        _db.collection("users").document(authResult.user.uid).setData(
+          {
+            "email": email,
+            "lastSeen": DateTime.now(),
+            "signin_method": authResult.user.providerId
           },
         );
       } catch (e) {
@@ -116,7 +105,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
       final FirebaseUser user =
           (await _auth.signInWithCredential(credential)).user;
-      print("signed in " + user.displayName);
+      _db.collection("users").document(user.uid).setData(
+        {
+          "displayName": user.displayName,
+          "email": user.email,
+          'photoUrl': user.photoUrl,
+          "lastseen": DateTime.now(),
+          "signin_method": user.providerId
+        },
+      );
     } catch (e) {
       showDialog(
         context: context,
