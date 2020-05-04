@@ -2,6 +2,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:task_app/config/config.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:task_app/screens/email_pass_signup.dart';
+import 'package:task_app/screens/phone_signin_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -14,6 +17,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   void _signIn(BuildContext context) async {
     String email = _emailController.text.trim();
@@ -46,7 +50,6 @@ class _LoginScreenState extends State<LoginScreen> {
           },
         );
       } catch (e) {
-        print(e);
         showDialog(
           context: context,
           builder: (ctx) {
@@ -93,6 +96,44 @@ class _LoginScreenState extends State<LoginScreen> {
                   Navigator.of(ctx).pop();
                 },
               )
+            ],
+          );
+        },
+      );
+    }
+  }
+
+  void _signInUsingGoogle() async {
+    try {
+      final GoogleSignInAccount googleUser = await _googleSignIn.signIn();
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+
+      final AuthCredential credential = GoogleAuthProvider.getCredential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      final FirebaseUser user =
+          (await _auth.signInWithCredential(credential)).user;
+      print("signed in " + user.displayName);
+    } catch (e) {
+      showDialog(
+        context: context,
+        builder: (ctx) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: Text('Error'),
+            content: Text('${e.message}'),
+            actions: [
+              FlatButton(
+                child: Text("Cancel"),
+                onPressed: () {
+                  Navigator.of(ctx).pop();
+                },
+              ),
             ],
           );
         },
@@ -182,7 +223,13 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
             FlatButton(
-              onPressed: () {},
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (ctx) => EmailPassSignupScreen(),
+                  ),
+                );
+              },
               child: Text('Signup  using Email'),
             ),
             Container(
@@ -190,7 +237,9 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Wrap(
                 children: [
                   FlatButton.icon(
-                    onPressed: () {},
+                    onPressed: () {
+                      _signInUsingGoogle();
+                    },
                     icon: Icon(
                       FontAwesomeIcons.google,
                       color: Colors.red,
@@ -203,7 +252,13 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   FlatButton.icon(
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (ctx) => PhoneSigninScreen(),
+                        ),
+                      );
+                    },
                     icon: Icon(
                       Icons.phone,
                       color: Colors.blue,
